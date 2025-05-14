@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-spy_df = pd.read_csv('data/clean/SPY_2023_eod.csv', index_col = 0, parse_dates = True)
+
 spy_df = pd.read_csv('data/clean/SPY_2023_eod.csv')
 spy_df.columns = spy_df.columns.str.strip()         
 spy_df.reset_index(inplace=True)                    
@@ -16,6 +16,11 @@ smile_df = smile_features
 smile_df.drop(columns=['Unnamed: 0'], inplace=True)
 
 term_df = pd.read_csv('data/term_structure.csv')
+
+smile_df['quote_date'] = pd.to_datetime(smile_df['quote_date'])
+smile_df['expire_date'] = pd.to_datetime(smile_df['expire_date'])
+term_df['quote_date'] = pd.to_datetime(term_df['quote_date'])
+
 
 spy_df['moneyness'] = spy_df['STRIKE'] / spy_df['UNDERLYING_LAST']
 spy_df['mid_iv'] = 0.5 * (spy_df['C_IV'] + spy_df['P_IV'])
@@ -43,8 +48,18 @@ merged_df = merged_df.merge(
 )
 
 #iv threshold as 0.04
-merged_df['label'] = (merged_df['mid_iv'] > merged_df['atm_iv'] + 0.04).astype(int)
+def directional_label(row):
+    if row['mid_iv'] > row['atm_iv'] + 0.04:
+        return 1     # overpriced : SHORT
+    elif row['mid_iv'] < row['atm_iv'] - 0.04:
+        return -1    # underpriced : LONG
+    else:
+        return 0     # fairly priced : IGNORE
 
-merged_df.to_csv('data/features.csv')
+merged_df['label'] = merged_df.apply(directional_label, axis=1)
+
+
+merged_df.to_csv('data/features_filtered.csv', index=False)
+
 
 
