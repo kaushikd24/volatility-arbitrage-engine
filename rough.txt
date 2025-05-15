@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[144]:
+
+
+import pandas as pd
+import numpy as np
+
+
+# In[146]:
+
+
+signals = pd.read_csv('data/signals_mispricing.csv')
+
+
+# In[147]:
+
+
+market_data = pd.read_csv('data/clean/SPY_2023_eod.csv')
+
+
+# In[150]:
+
+
+signals.head()
+
+
+# In[151]:
+
+
+market_data.head()
+
+
+# In[ ]:
+
+
+matched_signals = {}
+matched_rows = []
+
+for index, row in signals.iterrows():
+    quote_date = row['QUOTE_DATE']
+    strike = row['STRIKE']
+    expire_date = row['EXPIRE_DATE']
+    
+    # More efficient filtering with a single mask
+    mask = (
+        (market_data['QUOTE_DATE'] == quote_date) & 
+        (market_data['STRIKE'] == strike) & 
+        (market_data['EXPIRE_DATE'] == expire_date)
+    )
+    
+    # Apply filter
+    market_data_filtered = market_data[mask]
+    
+    # Only store if we found matches
+    if not market_data_filtered.empty:
+        matched_signals[index] = market_data_filtered
+        
+        # Optionally collect data for a combined DataFrame
+        for _, m_row in market_data_filtered.iterrows():
+            matched_rows.append({
+                'signal_index': index,
+                'trade_type': row['trade_type'],
+                'confidence': row['confidence'],
+                'price': m_row['UNDERLYING_LAST'],
+                'strike': strike,
+                'quote_date': quote_date,
+                'expire_date': expire_date
+                # Add other fields as needed
+            })
+
+# How many signals were matched?
+print(f"Total signals: {len(signals)}")
+print(f"Matched signals: {len(matched_signals)}")
+
+# Create a consolidated DataFrame if needed
+# matched_df = pd.DataFrame(matched_rows)
+# matched_df.to_csv('data/matched_signals.csv', index=False)
+
+
+# In[ ]:
+
+
+

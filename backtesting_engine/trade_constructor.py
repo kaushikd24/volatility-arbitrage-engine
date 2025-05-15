@@ -26,6 +26,14 @@ class Trade:
     def is_active(self, date: str):
         return self.entry_date <= date <= self.exit_date
     
+    def calc_exit_price(self, underlying_last):
+        """
+        Calculate the exit price for a put option.
+        Put option intrinsic value: max(strike - underlying_last, 0)
+        
+        """
+        return max(self.strike - underlying_last, 0)
+
 #build a class to store trades
 class StoreTrades:
     def __init__(self):
